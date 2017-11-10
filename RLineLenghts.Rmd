@@ -1,0 +1,56 @@
+---
+title: "Exploring Line Lengths in R Packages"
+author: "Michael Ingrisch"
+date: "November 10, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Jake van der Plas recently analyzed the line length used in Python packages. He was inspired by an analysis of tweet lenghts on Twitter, which observed that English tweets ...
+
+I regularly use Python as a general purpose programming language, for purposes like image analysis, sorting of files and other tasks. In R, on the other hand, I am much more a user than a programmer, with a focus on data analysis, modeling and visualization. Jake vdPs analysis inspired me to reproduce this work in R, with the purpose to analyze line lengths in R code. From this task, I hope:
+
+1. To become more familiar with R as a programming language and find alternatives to Python's os.walk and particularly python list comprehensions.
+
+2. To find out whether there is a style guide for R programming, like PEP8 for the python world
+
+3. To observe whether there are style differences w.r.t to line length between the tidyverse and base R.
+
+3. To investigate whether the lack of a character limit leads to a line length distribution which follows a lognormal distribution.
+
+# Counting lines in a R package
+
+First, we need to find out how to count lines in an arbitrary R package. In python, this would be straigthforward (for me), in R, I lack foundations. 
+
+I found out where my R library resides, and can list single packages. I then need a function which accepts a package name and  returns a list of all R files, with a nested list (or a tidy data frame) with line lengths.
+
+Excursion: for writing functions, I will quickly learn to use testthat(). (and I will factor out this function)
+
+```{r library.location}
+
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
