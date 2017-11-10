@@ -21,36 +21,91 @@ I regularly use Python as a general purpose programming language, for purposes l
 
 3. To investigate whether the lack of a character limit leads to a line length distribution which follows a lognormal distribution.
 
-# Counting lines in a R package
+# Counting lines in a dplyr
 
-First, we need to find out how to count lines in an arbitrary R package. In python, this would be straigthforward (for me), in R, I lack foundations. 
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+```
 
-I found out where my R library resides, and can list single packages. I then need a function which accepts a package name and  returns a list of all R files, with a nested list (or a tidy data frame) with line lengths.
 
-Excursion: for writing functions, I will quickly learn to use testthat(). (and I will factor out this function)
+First, we need a function that reports lines and their lengths in an arbitrary R package. In python, this would be straigthforward (for me), in R, I lack foundations. Since I work within the tidyverse, this function should return a dataframe with the columns Package, Line and Length. After some base R exercises, I produced the following function:
 
 ```{r library.location}
+# Very cool finding: library() returns an object which contains all packages together with their library path:
+library.iqr <- library()
+# our function then needs only to search within package.df 
+package.df <- as_data_frame(library.iqr[["results"]])
 
+file_to_df <- function(filename){
+  # read a file line-by-line into a dataframe
+  df <- as_data_frame(readr::read_lines(filename))
+  df
+}
+
+line_lengths <- function(package){
+  # this function reads lines and counts their length in all R scripts in a given package
+
+  # find path to package
+  pkg.df = filter(package.df,Package == package)
+  
+  # In python, I would raise an exception here:
+  # there is an issue with metapackages like tidyverse
+  if (nrow(pkg.df) != 1) {
+    print(pkg.df)
+    return(NULL)
+  }
+
+  # list all R files in path
+  pkg.path = file.path(pkg.df$LibPath, pkg.df$Package)
+  filelist = list.files(path = pkg.path, 
+                        pattern = '.*\\.R$', # all files that end with .R
+                        full.names = T, # for convenience: full path
+                        recursive = T)
+  
+  # for each R file: read lines and count length
+  #for loops are evil, we use purrr::map
+  dfs <- purrr::map(filelist, file_to_df)  
+  
+  df = bind_rows(dfs) %>% ## merge dataframes
+    mutate(Package = package) %>% # insert the package name, for convenience
+    mutate(line_length = nchar(value)) # determine line length
+  return(df)
+}
+```
+
+With the function ``` line_lengths```, we can now proceed with the fun part and investigate the line lengths in ggplot2:
+```{r visualize.ggplot}
+
+ggplot.lines <- line_lengths("dplyr") 
+
+ggplot.lines %>% 
+  ggplot(aes(x=line_length)) + 
+  geom_histogram(binwidth = 1, color = "dark gray", fill="light gray")
 ```
 
 
 
-## R Markdown
+WE observe to spikes, one for empty lines and one for lines with a length of 75. We investigate the latter:
+```{r}
+ggplot.lines %>% 
+  filter(line_length==75) %>% select(value)
+```
+Apparently, comment lines are often dash-filled to a line length of 75.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+We plot again with empty lines removed:
+```{r}
+ggplot.lines %>% 
+  filter(line_length >0 ) %>% 
+  filter(line_length != 75) %>% 
+  ggplot(aes(x=line_length)) + 
+  geom_histogram(binwidth = 1, color = "dark gray", fill="light gray")
 ```
 
-## Including Plots
+This looks much more like the kind of distribution which we expect from Jake vdP's article. What is it with these 1-character lines, actually?
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+ggplot.lines %>% 
+  filter(line_length==1) %>% select(value)
 ```
+Most of these lines appear to be closing parentheses - this is something which is rarely observed in the python world.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
